@@ -1,0 +1,458 @@
+/**
+ * JavaCC template file created by SF JavaCC plugin 1.5.17+ wizard for JavaCC 1.5.0+
+ */
+
+options
+{
+    STATIC = false ;	
+}
+
+
+PARSER_BEGIN (SqlParser)
+package edu.buffalo.cse.sql.parser;
+  import java.util.ArrayList;
+  import java.util.HashMap;
+  import edu.buffalo.cse.sql.plan.PlanNode;
+  import edu.buffalo.cse.sql.plan.*;
+  import edu.buffalo.cse.sql.parser.*;
+  
+  public class SqlParser
+   {
+         public ParserOutput initParser()throws ParseException, TokenMgrError
+   		{
+
+		Map<String, Schema.TableFromFile> tables = new HashMap<String, Schema.TableFromFile>();
+   		PlanNode q;
+   		tables= createTableStatement();
+		q= selectStatement();
+
+		ParserOutput parserOutput = new ParserOutput(tables,q);
+			return parserOutput;	  
+		}
+
+		
+
+
+   }
+PARSER_END (SqlParser)
+
+SKIP: { "\n" | "\r" | "\n\r" |"\\"|"\t"|" "}
+
+TOKEN [IGNORE_CASE]:
+{
+ <CTCMD :("CREATE TABLE")>
+|<SELECTCMD:("Select")>
+|< BOOLEAN_LITERALS:<TRUE>|<FALSE>>
+| <TRUE:"true">
+| <FALSE:"false">
+| <BOOLEAN_OPERATORS:(< AND >|< OR >) >
+|<UNION:("UNION")>
+|<AND:("AND")>
+|<OR:("OR")>
+|<NOT:("NOT")>
+| < DATATYPE:(< INT>|< REAL>)>
+| <INT:"int">
+| <REAL:"real">
+//|<NUMBER:(["0"-"9"]\.["0"-"9"]*)|(["0"-"9"]*\.["0"-"9"])|(["0"-"9"])>
+|<SEMICOLON:(";")>
+//|<TNAME:(["a"-"z"])+ >
+|<OBRA:("(")+>
+|<CBRA:(")")+>
+|<COMMA:(",")>
+|<FROM:("From")>
+|<AS:("AS")>
+| < JOIN:("JOIN")>
+| < ON:("ON")>
+|<FILE:("File")>
+| <USING:("USING")>
+|<CSV:("CSV")>
+//|< FILENAME : "'" ((~["'"] | ("\\'") | ("\\\\"))*) "'" >
+|< BOOLEAN_COMPARISON:(["=","<",">"]) >
+| < COUNT:("COUNT")>
+//| < STAR:("*")>
+|<BINARYOPERATOR:(["+", "-","*","/"]) >
+|<FLOATING_POINT_LITERAL: (["-"])?(["0"-"9"])+"."(["0"-"9"])(<EXPONENT>)+(["0"-"9"])?
+| (["-"])?(["0"-"9"])+"."(["0"-"9"])+(<EXPONENT>)?
+|(["-"])?(["0"-"9"])+"."(<EXPONENT>)+(["0"-"9"])?
+| (["-"])?(["0"-"9"])+<EXPONENT>
+| (["-"])?(["0"-"9"])+(<EXPONENT>)?>
+| <#EXPONENT:["e", "E"](["+", "-"])?(["0"-"9"])+>
+|<FILENAME:("'"(<COLNAME>)("/")(["a"-"z"])"."< COLNAME>"'")>
+| < TEST:("test")>
+| < DAT:("dat")>
+| < WHERE:("WHERE") >
+//|<ARITHMETIC_EXPR:(< OBRA >)?(<FLOATING_POINT_LITERAL >)(< BINARYOPERATOR >)?(<FLOATING_POINT_LITERAL >)?(<CBRA >)?(< BINARYOPERATOR >)?(<FLOATING_POINT_LITERAL >)? >
+|< AGGREGATE:(< MIN>|< SUM>|< AVG>|< MAX>)>
+| < MIN:("MIN")>
+| < SUM:("SUM")>
+| < AVG:("AVG")>
+| < MAX:("MAX")>
+| < EQUAL:("=")>
+|<COLNAME:(["a"-"z"])+>
+| < DOT:(".")>
+//| <STRING_LITERAL:"'"(~["'"])*("'"(~["'"])*)*"'">
+|<  STRING_LITERAL:"'" ((~["'"] | ("\\'") | ("\\\\"))*) "'" >
+
+}
+
+
+
+//SPECIAL_TOKEN : {<COMMENT:("#")+(<TNAME>)+("#")+>}
+
+PlanNode selectStatement():
+{Token value1,value2,operator1,operator2,value3;
+Token ColumnName1;
+Token ColumnName2;
+Token AggregateValue2;
+
+NullSourceNode child_1;
+ProjectionNode query_0;
+ProjectionNode lhs_1;
+PlanNode rhs_2;
+List< String> TAblelist = new ArrayList< String>();
+}
+
+{
+  
+   
+    (
+       
+         <SELECTCMD>
+  	(<OBRA>                        //open brace
+  	value1=<FLOATING_POINT_LITERAL >
+	operator1=< BINARYOPERATOR>
+	value2=<FLOATING_POINT_LITERAL >
+	<CBRA>
+	operator2=< BINARYOPERATOR>
+	value3=<FLOATING_POINT_LITERAL >
+< SEMICOLON> 
+   < EOF>
+	)
+	{child_1 = new NullSourceNode(1);
+     query_0 = new ProjectionNode();
+     if (operator1.image=="+" && operator2.image=="*")
+     {
+       query_0.addColumn(new ProjectionNode.Column("EXPR", new ExprTree(ExprTree.OpCode.MULT, new ExprTree(ExprTree.OpCode.ADD, new ExprTree.ConstLeaf(value1.image), new ExprTree.ConstLeaf(value2.image)), new ExprTree.ConstLeaf(value3.image))));
+   		query_0.setChild(child_1);
+   
+     }
+	   return query_0;
+  }
+| 
+   (value1=<FLOATING_POINT_LITERAL >)    ////only no
+  {  child_1 = new NullSourceNode(1);
+     query_0 = new ProjectionNode();
+  }
+  (
+  < SEMICOLON> 
+   < EOF> )
+   {
+	query_0.addColumn(new ProjectionNode.Column("EXPR", new ExprTree.ConstLeaf(value1.image)));
+    query_0.setChild(child_1);
+     return query_0;  }
+     |  
+    (< AS>
+     ColumnName=<COLNAME>)
+  		( < SEMICOLON>< EOF>)
+		{
+  	 
+    	query_0.addColumn(new ProjectionNode.Column(ColumnName.image, new ExprTree.ConstLeaf(value1.image)));
+    	query_0.setChild(child_1);
+      	return query_0;  
+  		}
+  		|
+  		(<UNION>)
+  		{
+		NullSourceNode child_3 = new NullSourceNode(1);
+    	ProjectionNode lhs_1 = new ProjectionNode();
+    	lhs_1.addColumn(new ProjectionNode.Column(ColumnName.image, new ExprTree.ConstLeaf(value1.iamge)));
+    	lhs_1.setChild(child_3);
+   }
+   
+  		  (
+  		    rhs_2=selectStatement())
+  		{
+  		   UnionNode query_0 = new UnionNode();
+    query_0.setLHS(lhs_1);
+    query_0.setRHS(rhs_2);
+    return query_0; 
+  		} 
+		|
+		(<COMMA>
+		value2=<FLOATING_POINT_LITERAL >
+		< AS>
+		ColumnName2=<COLNAME>)
+		{NullSourceNode child_3 = new NullSourceNode(1);
+    ProjectionNode lhs_1 = new ProjectionNode();
+    lhs_1.addColumn(new ProjectionNode.Column(ColumnName.image, new ExprTree.ConstLeaf(value1)));
+    lhs_1.addColumn(new ProjectionNode.Column(ColumnName2.image, new ExprTree.ConstLeaf(value2)));
+    lhs_1.setChild(child_3);
+		}
+		(< UNION>)
+		
+		
+		 (
+		    rhs_2=selectStatement())
+
+		  {
+		    
+		    	
+		  UnionNode query_0 = new UnionNode();
+    query_0.setLHS(lhs_1);
+    query_0.setRHS(rhs_2);
+    return query_0;
+}
+
+
+  
+		
+		| 
+		(< SEMICOLON >< EOF >)
+  		  {
+  		      return lhs_1;
+  		    }
+|
+(< BINARYOPERATOR>
+value2=<FLOATING_POINT_LITERAL >
+< SEMICOLON>< EOF>
+)
+{
+	query_0.addColumn(new ProjectionNode.Column("EXPR", new ExprTree(ExprTree.OpCode.ADD, new ExprTree.ConstLeaf(value1.image), new ExprTree.ConstLeaf(value2.image))));
+    query_0.setChild(child_1);
+      return query_0; 
+      
+}
+
+
+|
+
+(value1=< BOOLEAN_LITERALS>)
+  	(< SEMICOLON>< EOF>)
+	{
+    query_0.addColumn(new ProjectionNode.Column("EXPR", new ExprTree.ConstLeaf(value1.image)));
+    query_0.setChild(child_1);
+    return query_0; 
+	}
+|
+	(value2=<BOOLEAN_OPERATORS>
+	value3=<BOOLEAN_LITERALS>
+	< SEMICOLON>< EOF>
+	)
+	{
+	  query_0.addColumn(new ProjectionNode.Column("EXPR", new ExprTree(ExprTree.OpCode.value2, new ExprTree.ConstLeaf(value1.image), new ExprTree.ConstLeaf(value3.image))));
+    query_0.setChild(child_1);
+    return query_0; 
+	}
+  
+
+
+|
+(<NOT>
+value1=< BOOLEAN_LITERALS>< SEMICOLON>< EOF>)
+{
+  query_0.addColumn(new ProjectionNode.Column("EXPR", new ExprTree(ExprTree.OpCode.NOT, new ExprTree.ConstLeaf(value1.image))));
+    query_0.setChild(child_1);
+    return query_0; 
+}
+|
+//(value1=<STRING_LITERAL >
+(
+  < SEMICOLON>< EOF>)
+
+{
+
+  query_0.addColumn(new ProjectionNode.Column("EXPR", new ExprTree.ConstLeaf(value1.image)));
+    query_0.setChild(child_1);
+    return query_0; 
+}
+| (< COMMA>
+	ColumnName=< COLNAME>)*
+	< FROM>
+	TableName=< COLNAME>
+	(< COMMA>
+	ColumnName=< COLNAME>
+	(<WHERE >
+	(< OBRA>)*
+	 TableName1=<COLNAME >
+	< DOT>
+	ColumnName1=< COLNAME>
+	< EQUAL>
+	TableName2=<COLNAME >
+	< DOT>
+	ColumnName2=< COLNAME>
+	(< CBRA >< BOOLEAN_OPERATORS>< OBRA>TableName3=<COLNAME >
+	< DOT>
+	ColumnName3=< COLNAME>
+	< EQUAL>
+	TableName4=<COLNAME >
+	< DOT>
+	ColumnName4=< COLNAME>< CBRA>
+	)*
+	)*
+	)*
+	(
+	  < JOIN>
+	  ColumnName2=< COLNAME>
+	  < ON>TableName1=<COLNAME >
+	< DOT>
+	ColumnName1=< COLNAME>
+	< EQUAL>
+	TableName2=<COLNAME >
+	< DOT>
+	ColumnName2=< COLNAME>)*
+	
+
+	(< UNION>
+	)*
+	< SEMICOLON>< EOF>
+//)
+|
+(
+   AggregateValue=< AGGREGATE>
+	< OBRA>
+	ColumnName= < COLNAME>(< BINARYOPERATOR >ColumnName2= < COLNAME>)*
+	< CBRA>
+	(< COMMA>AggregateValue2=< AGGREGATE>< OBRA>ColumnName2= < COLNAME>(< BINARYOPERATOR >ColumnName2= < COLNAME>)*
+	< CBRA>
+	)*
+	< FROM>
+	TableName1=< COLNAME>
+	{TAblelist.add(TableName1);
+}
+
+	(< COMMA>
+	TableName2=< COLNAME>	
+	{TAblelist.add(TableName2);}
+	)*
+	(<WHERE >
+	(< OBRA>)*
+	 TableName1=<COLNAME >
+	< DOT>
+	ColumnName1=< COLNAME>
+	< EQUAL>
+	TableName2=<COLNAME >
+	< DOT>
+	ColumnName2=< COLNAME>
+	(< CBRA >< BOOLEAN_OPERATORS>< OBRA>TableName3=<COLNAME >
+	< DOT>
+	ColumnName3=< COLNAME>
+	< EQUAL>
+	TableName4=<COLNAME >
+	< DOT>
+	ColumnName4=< COLNAME>< CBRA>
+	)*
+	)*< SEMICOLON>
+)
+|
+(< DOT>
+ColumnName=< COLNAME>(
+  < SEMICOLON>< EOF>)
+
+{
+
+  query_0.addColumn(new ProjectionNode.Column("EXPR", new ExprTree.ConstLeaf(value1.image)));
+    query_0.setChild(child_1);
+    return query_0; 
+}
+| (< COMMA>
+	ColumnName=< COLNAME>)*
+	< FROM>
+	TableName=< COLNAME>
+	(< UNION>
+	)*
+	< SEMICOLON>< EOF>
+
+)
+)*
+}
+
+
+HashMap<String, Schema.TableFromFile> createTableStatement():
+{
+  Token TableName;
+  Token ColumnName;
+  Token DataType;
+   Token FileName;
+   TableStruct tableStruct;
+   ArrayList<TableStruct> tableList = new ArrayList<TableStruct>();
+}
+{
+  (
+    <CTCMD>
+  tableStruct.TableName= < COLNAME>
+  <OBRA>
+  /*(
+    ColumnName=< COLNAME>
+  DataType=<DATATYPE>
+  < COMMA>)**/
+tableStruct.Variables = Variables()
+  < CBRA>
+  < FROM>
+  < FILE>
+  tableStruct.FileName=<FILENAME >
+  < USING>
+  < CSV>
+  < SEMICOLON>
+  )*
+  {tableList.add (tableStruct) ;}
+    
+	{
+	 Map<String, Schema.TableFromFile> tables
+      = new HashMap<String, Schema.TableFromFile>();
+	
+
+   Schema.TableFromFile table_S;
+    table_S = new Schema.TableFromFile(new File("test/s.dat"));
+    table_S.add(new Schema.Column("S", "A", Schema.Type.INT));
+    table_S.add(new Schema.Column("S", "B", Schema.Type.INT));
+    tables.put("S", table_S);
+	}
+
+
+    
+}
+
+HashMap Variables():
+{
+   Token TName;
+   Token TType;
+   HashMap<String,String> var = new HashMap<String, String>();
+}
+
+{
+  (
+TName = <COLNAME>
+TType = DType()
+<COMMA>
+{var.put(TName.image,TType.image);}
+)*
+{return var;}
+}
+
+
+Token DType():
+{
+   Token TDType;
+}
+{
+  
+      TDType=<COLNAME>
+    [<OBRA><FLOATING_POINT_LITERAL ><CBRA>]
+ {return TDType;}
+ }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
